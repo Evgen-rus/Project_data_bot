@@ -1,0 +1,28 @@
+# Python кэш
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Виртуальное окружение
+venv/
+env/
+.env
+
+# Credentials и конфиденциальные данные
+credentials/*.json
+*.key
+*.token
+
+# Логи
+*.log
+
+# IDE файлы
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Системные файлы
+.DS_Store
+Thumbs.db
