@@ -216,7 +216,7 @@ class TelegramBot:
         await self.bot.set_my_commands(commands)
 
     async def check_and_send_reports(self):
-        """Проверяет необходимость отправки отчетов"""
+        """Проверяет необходимость отправки отчетов из второй таблицы"""
         now = datetime.now(pytz.timezone(config.REPORT_TIME['TIMEZONE']))
         current_date = now.date()
 
@@ -225,33 +225,16 @@ class TelegramBot:
             (self.last_report_date is None or self.last_report_date < current_date)):
             
             try:
-                logger.info(f"Attempting to send reports at {now}")
+                logger.info(f"Attempting to send secondary report at {now}")
                 
-                # Отчет по первой таблице
-                result_main = self.data_processor.generate_daily_report()
-                if result_main['success']:
-                    verified_status = "✅ Проверено" if result_main['verified'] else "❌ Не проверено"
-                    text_main = config.MESSAGES['DAILY_REPORT'].format(
-                        date=result_main['date'],
-                        records=result_main['records'],
-                        deposit=result_main.get('deposit', 0),
-                        verified=verified_status
-                    )
-                    await self.bot.send_message(
-                        chat_id=config.GROUP_CHAT_ID,
-                        text=text_main,
-                        parse_mode="Markdown"
-                    )
-                    logger.info("Main report sent successfully")
-
                 # Отчет по второй таблице
                 result_secondary = self.data_processor.generate_secondary_report()
                 if result_secondary['success']:
+                    text_secondary = config.MESSAGES['SECONDARY_REPORT'].format(
+                        date=result_secondary['date'],
+                        projects_data=result_secondary['projects_data']
+                    )
                     try:
-                        text_secondary = config.MESSAGES['SECONDARY_REPORT'].format(
-                            date=result_secondary['date'],
-                            projects_data=result_secondary['projects_data']
-                        )
                         await self.bot.send_message(
                             chat_id=config.GROUP_CHAT_ID,
                             text=text_secondary,
@@ -259,20 +242,19 @@ class TelegramBot:
                         )
                         logger.info("Secondary report sent successfully")
                     except Exception as e:
-                        logger.error(f"Error with Markdown formatting in secondary report: {e}")
-                        # Если ошибка форматирования - отправляем без разметки
-                        text_secondary = text_secondary.replace('*', '').replace('_', '').replace('`', '')
+                        logger.error(f"Error sending secondary report: {e}")
+                        # Пробуем отправить без форматирования
                         await self.bot.send_message(
                             chat_id=config.GROUP_CHAT_ID,
-                            text=text_secondary
+                            text=text_secondary.replace('*', '').replace('_', '').replace('`', '')
                         )
                         logger.info("Secondary report sent without formatting")
 
                 self.last_report_date = current_date
-                logger.info(f"All reports sent successfully at {now}")
+                logger.info(f"Secondary report sent successfully at {now}")
                 
             except Exception as e:
-                logger.error(f"Error sending reports: {e}")
+                logger.error(f"Error sending secondary report: {e}")
 
     async def start(self):
         """Запуск бота"""
