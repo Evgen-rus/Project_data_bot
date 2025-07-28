@@ -122,7 +122,7 @@ MESSAGES.update({
     'SECONDARY_PROJECT_FORMAT': """
 *{name}*
 Объем общий тариф: {total_volume}
-Выдано за вчера: {yesterday_data}
+Выдано за сегодня: {today_data}
 Выдано итого: {total_issued}
 Остаток тарифа: {tariff_remaining}
 """

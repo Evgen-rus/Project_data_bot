@@ -302,21 +302,21 @@ class DataProcessor:
             if not data:
                 return {'success': False, 'error': 'No data in secondary sheet'}
 
-            # Получаем заголовки для определения индекса вчерашней даты
+            # Получаем заголовки для определения индекса сегодняшней даты
             headers = data[0]
-            yesterday = datetime.now(self.moscow_tz) - timedelta(days=1)
-            yesterday_str = yesterday.strftime('%d.%m.%y')
+            today = datetime.now(self.moscow_tz)
+            today_str = today.strftime('%d.%m.%y')
             
-            # Ищем индекс колонки с вчерашней датой
-            yesterday_col_idx = None
+            # Ищем индекс колонки с сегодняшней датой
+            today_col_idx = None
             for idx, header in enumerate(headers):
-                if yesterday_str in header:
-                    yesterday_col_idx = idx
+                if today_str in header:
+                    today_col_idx = idx
                     break
 
-            if yesterday_col_idx is None:
-                logger.error(f"Не найдена колонка с датой {yesterday_str}")
-                return {'success': False, 'error': f'Не найдены данные за {yesterday_str}'}
+            if today_col_idx is None:
+                logger.error(f"Не найдена колонка с датой {today_str}")
+                return {'success': False, 'error': f'Не найдены данные за {today_str}'}
 
             active_projects = []
             for row in data[1:]:  # Пропускаем заголовок
@@ -328,7 +328,7 @@ class DataProcessor:
                             'total_volume': int(float(row[2].replace('\xa0', '').replace(' ', ''))) if row[2] else 0,
                             'tariff_remaining': int(float(row[4].replace('\xa0', '').replace(' ', ''))) if row[3] else 0,
                             'total_issued': int(float(row[5].replace('\xa0', '').replace(' ', ''))) if row[4] else 0,
-                            'yesterday_data': int(float(row[yesterday_col_idx].replace('\xa0', '').replace(' ', ''))) if len(row) > yesterday_col_idx and row[yesterday_col_idx] else 0
+                            'today_data': int(float(row[today_col_idx].replace('\xa0', '').replace(' ', ''))) if len(row) > today_col_idx and row[today_col_idx] else 0
                         }
                         active_projects.append(project_data)
                     except (ValueError, IndexError) as e:
@@ -344,7 +344,7 @@ class DataProcessor:
 
             return {
                 'success': True,
-                'date': yesterday.strftime(config.SHEET_STRUCTURE['DATE_FORMAT_OUT']),
+                'date': today.strftime(config.SHEET_STRUCTURE['DATE_FORMAT_OUT']),
                 'projects_data': projects_text
             }
         except Exception as e:
