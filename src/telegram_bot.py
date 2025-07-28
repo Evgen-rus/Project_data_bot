@@ -200,6 +200,10 @@ class TelegramBot:
                 # Отправляем предупреждение о проектах для отключения, если есть
                 if result.get('disable_warning'):
                     await message.answer(result['disable_warning'], parse_mode="Markdown")
+                    
+                # Отправляем предупреждение о проектах для уменьшения лимитов, если есть
+                if result.get('reduce_warning'):
+                    await message.answer(result['reduce_warning'], parse_mode="Markdown")
             except Exception as e:
                 logger.error(f"Error with Markdown formatting: {e}")
                 # Если ошибка форматирования - отправляем без разметки
@@ -251,6 +255,14 @@ class TelegramBot:
                             await self.bot.send_message(
                                 chat_id=config.GROUP_CHAT_ID,
                                 text=result_secondary['disable_warning'],
+                                parse_mode="Markdown"
+                            )
+                            
+                        # Отправляем предупреждение о проектах для уменьшения лимитов, если есть
+                        if result_secondary.get('reduce_warning'):
+                            await self.bot.send_message(
+                                chat_id=config.GROUP_CHAT_ID,
+                                text=result_secondary['reduce_warning'],
                                 parse_mode="Markdown"
                             )
                     except Exception as e:

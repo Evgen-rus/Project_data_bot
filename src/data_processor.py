@@ -320,6 +320,7 @@ class DataProcessor:
 
             active_projects = []
             projects_to_disable = []  # Список проектов для отключения
+            projects_to_reduce = []   # Список проектов для уменьшения лимитов
             
             for row in data[1:]:  # Пропускаем заголовок
                 if len(row) > 1 and row[1] == 'TRUE':  # Проверяем статус
@@ -337,6 +338,9 @@ class DataProcessor:
                         # Проверяем остаток тарифа
                         if project_data['tariff_remaining'] <= 0:
                             projects_to_disable.append(project_data['name'])
+                        # Проверяем нужно ли уменьшить лимиты
+                        elif project_data['tariff_remaining'] <= project_data['today_data']:
+                            projects_to_reduce.append(project_data['name'])
                             
                     except (ValueError, IndexError) as e:
                         logger.error(f"Ошибка обработки строки {row}: {e}")
@@ -355,12 +359,20 @@ class DataProcessor:
                 disable_warning = config.MESSAGES['PROJECTS_TO_DISABLE'].format(
                     projects_list='\n'.join([f"*{name}*" for name in projects_to_disable])
                 )
+                
+            # Формируем сообщение о проектах для уменьшения лимитов
+            reduce_warning = ""
+            if projects_to_reduce:
+                reduce_warning = config.MESSAGES['PROJECTS_TO_REDUCE'].format(
+                    projects_list='\n'.join([f"*{name}*" for name in projects_to_reduce])
+                )
 
             return {
                 'success': True,
                 'date': today.strftime(config.SHEET_STRUCTURE['DATE_FORMAT_OUT']),
                 'projects_data': projects_text,
-                'disable_warning': disable_warning
+                'disable_warning': disable_warning,
+                'reduce_warning': reduce_warning
             }
         except Exception as e:
             logger.error(f"Error generating secondary report: {e}")
