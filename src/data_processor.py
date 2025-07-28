@@ -353,7 +353,7 @@ class DataProcessor:
             disable_warning = ""
             if projects_to_disable:
                 disable_warning = config.MESSAGES['PROJECTS_TO_DISABLE'].format(
-                    projects_list='\n'.join([f"• {name}" for name in projects_to_disable])
+                    projects_list='\n'.join([f"*{name}*" for name in projects_to_disable])
                 )
 
             return {
