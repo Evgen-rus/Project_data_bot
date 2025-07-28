@@ -120,11 +120,10 @@ MESSAGES.update({
 {projects_data}""",
 
     'SECONDARY_PROJECT_FORMAT': """
-*{name}*
-Объем общий тариф: {total_volume}
+Проект: *{name}*
+Тариф: {total_issued}/{total_volume}
 Выдано за сегодня: {today_data}
-Выдано итого: {total_issued}
-Остаток тарифа: {tariff_remaining}
+Остаток: {tariff_remaining}
 """
 })
 
