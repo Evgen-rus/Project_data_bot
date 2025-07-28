@@ -124,6 +124,14 @@ MESSAGES.update({
 Тариф: {total_issued}/{total_volume}
 Выдано за сегодня: {today_data}
 Остаток: {tariff_remaining}
+""",
+
+    'PROJECTS_TO_DISABLE': """
+⚠️ *ВНИМАНИЕ! Тарифы исчерпаны:*
+
+{projects_list}
+
+*Необходимо отключить указанные проекты!*
 """
 })
 

@@ -319,6 +319,8 @@ class DataProcessor:
                 return {'success': False, 'error': f'Не найдены данные за {today_str}'}
 
             active_projects = []
+            projects_to_disable = []  # Список проектов для отключения
+            
             for row in data[1:]:  # Пропускаем заголовок
                 if len(row) > 1 and row[1] == 'TRUE':  # Проверяем статус
                     try:
@@ -331,6 +333,11 @@ class DataProcessor:
                             'today_data': int(float(row[today_col_idx].replace('\xa0', '').replace(' ', ''))) if len(row) > today_col_idx and row[today_col_idx] else 0
                         }
                         active_projects.append(project_data)
+                        
+                        # Проверяем остаток тарифа
+                        if project_data['tariff_remaining'] <= 0:
+                            projects_to_disable.append(project_data['name'])
+                            
                     except (ValueError, IndexError) as e:
                         logger.error(f"Ошибка обработки строки {row}: {e}")
                         continue
@@ -341,11 +348,19 @@ class DataProcessor:
             projects_text = ""
             for project in active_projects:
                 projects_text += config.MESSAGES['SECONDARY_PROJECT_FORMAT'].format(**project)
+                
+            # Формируем сообщение о проектах для отключения
+            disable_warning = ""
+            if projects_to_disable:
+                disable_warning = config.MESSAGES['PROJECTS_TO_DISABLE'].format(
+                    projects_list='\n'.join([f"• {name}" for name in projects_to_disable])
+                )
 
             return {
                 'success': True,
                 'date': today.strftime(config.SHEET_STRUCTURE['DATE_FORMAT_OUT']),
-                'projects_data': projects_text
+                'projects_data': projects_text,
+                'disable_warning': disable_warning
             }
         except Exception as e:
             logger.error(f"Error generating secondary report: {e}")

@@ -196,6 +196,10 @@ class TelegramBot:
                     projects_data=result['projects_data']
                 )
                 await message.answer(text, parse_mode="Markdown")
+                
+                # Отправляем предупреждение о проектах для отключения, если есть
+                if result.get('disable_warning'):
+                    await message.answer(result['disable_warning'], parse_mode="Markdown")
             except Exception as e:
                 logger.error(f"Error with Markdown formatting: {e}")
                 # Если ошибка форматирования - отправляем без разметки
@@ -241,6 +245,14 @@ class TelegramBot:
                             parse_mode="Markdown"
                         )
                         logger.info("Secondary report sent successfully")
+                        
+                        # Отправляем предупреждение о проектах для отключения, если есть
+                        if result_secondary.get('disable_warning'):
+                            await self.bot.send_message(
+                                chat_id=config.GROUP_CHAT_ID,
+                                text=result_secondary['disable_warning'],
+                                parse_mode="Markdown"
+                            )
                     except Exception as e:
                         logger.error(f"Error sending secondary report: {e}")
                         # Пробуем отправить без форматирования
