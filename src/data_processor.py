@@ -340,7 +340,10 @@ class DataProcessor:
                             projects_to_disable.append(project_data['name'])
                         # Проверяем нужно ли уменьшить лимиты
                         elif project_data['tariff_remaining'] <= project_data['today_data']:
-                            projects_to_reduce.append(project_data['name'])
+                            projects_to_reduce.append({
+                                'name': project_data['name'],
+                                'remaining': project_data['tariff_remaining']
+                            })
                             
                     except (ValueError, IndexError) as e:
                         logger.error(f"Ошибка обработки строки {row}: {e}")
@@ -364,7 +367,7 @@ class DataProcessor:
             reduce_warning = ""
             if projects_to_reduce:
                 reduce_warning = config.MESSAGES['PROJECTS_TO_REDUCE'].format(
-                    projects_list='\n'.join([f"*{name}*" for name in projects_to_reduce])
+                    projects_list='\n'.join([f"*{project['name']}* - остаток: {project['remaining']}" for project in projects_to_reduce])
                 )
 
             return {
