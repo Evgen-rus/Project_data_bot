@@ -33,7 +33,7 @@ SHEET_STRUCTURE = {
 # Time settings
 REPORT_TIME = {
     'HOUR': 13,
-    'MINUTE': 30,
+    'MINUTE': 40,
     'TIMEZONE': 'Europe/Moscow'
 }
 
