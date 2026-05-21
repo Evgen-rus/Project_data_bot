@@ -83,7 +83,10 @@ class DataProcessor:
                         
                         # Проверяем остаток тарифа
                         if project_data['tariff_remaining'] <= 0:
-                            projects_to_disable.append(project_data['name'])
+                            projects_to_disable.append({
+                                'name': project_data['name'],
+                                'remaining': project_data['tariff_remaining']
+                            })
                         # Проверяем нужно ли уменьшить лимиты
                         elif project_data['tariff_remaining'] <= project_data['today_data']:
                             projects_to_reduce.append({
@@ -106,7 +109,10 @@ class DataProcessor:
             disable_warning = ""
             if projects_to_disable:
                 disable_warning = config.MESSAGES['PROJECTS_TO_DISABLE'].format(
-                    projects_list='\n'.join([f"*{name}*" for name in projects_to_disable])
+                    projects_list='\n'.join([
+                        f"*{project['name']}* - остаток: {project['remaining']}"
+                        for project in projects_to_disable
+                    ])
                 )
                 
             # Формируем сообщение о проектах для уменьшения лимитов
