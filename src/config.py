@@ -24,6 +24,12 @@ REPORT_TIME = {
     'TIMEZONE': 'Europe/Moscow'
 }
 
+# Формат Telegram-отчёта:
+# "rich" — одна Rich Markdown-таблица на чат через sendRichMessage
+# "legacy" — старый текст через sendMessage (откат)
+# Допустимые значения: legacy | rich
+REPORTS_MESSAGE_FORMAT = "rich"
+
 SHEET_SETTINGS = {
     'SECONDARY': {
         'SPREADSHEET_ID': SECONDARY_SPREADSHEET_ID,

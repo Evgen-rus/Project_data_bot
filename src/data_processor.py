@@ -85,13 +85,15 @@ class DataProcessor:
                         if project_data['tariff_remaining'] <= 0:
                             projects_to_disable.append({
                                 'name': project_data['name'],
-                                'remaining': project_data['tariff_remaining']
+                                'remaining': project_data['tariff_remaining'],
+                                'today_data': project_data['today_data'],
                             })
                         # Проверяем нужно ли уменьшить лимиты
                         elif project_data['tariff_remaining'] <= project_data['today_data']:
                             projects_to_reduce.append({
                                 'name': project_data['name'],
-                                'remaining': project_data['tariff_remaining']
+                                'remaining': project_data['tariff_remaining'],
+                                'today_data': project_data['today_data'],
                             })
                             
                     except (ValueError, IndexError) as e:
@@ -125,7 +127,11 @@ class DataProcessor:
             return {
                 'success': True,
                 'date': today.strftime(config.SHEET_STRUCTURE['DATE_FORMAT_OUT']),
+                'report_date': today.date(),
+                'projects': active_projects,
                 'projects_data': projects_text,
+                'projects_to_disable': projects_to_disable,
+                'projects_to_reduce': projects_to_reduce,
                 'disable_warning': disable_warning,
                 'reduce_warning': reduce_warning
             }
