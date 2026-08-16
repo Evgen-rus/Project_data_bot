@@ -29,9 +29,6 @@ class TelegramBot:
             [InlineKeyboardButton(text="📊 Отчет", callback_data="secondary")]
         ])
 
-        # Добавляем время последней отправки отчетов
-        self.last_report_date = None
-
         # Добавляем обработчик всех сообщений
         @self.dp.message()
         async def message_handler(message: Message):
@@ -218,49 +215,11 @@ class TelegramBot:
         ]
         await self.bot.set_my_commands(commands)
 
-    async def check_and_send_reports(self):
-        """Проверяет необходимость отправки отчетов из второй таблицы"""
-        now = datetime.now(pytz.timezone(config.REPORT_TIME['TIMEZONE']))
-        current_date = now.date()
-
-        if (now.hour == config.REPORT_TIME['HOUR'] and 
-            now.minute == config.REPORT_TIME['MINUTE'] and
-            (self.last_report_date is None or self.last_report_date < current_date)):
-            
-            try:
-                logger.info(f"Attempting to send secondary report at {now}")
-
-                result_secondary = self.data_processor.generate_secondary_report()
-                await self.deliver_secondary_report(
-                    chat_id=config.GROUP_CHAT_ID,
-                    result=result_secondary,
-                    notify_empty=False,
-                )
-
-                self.last_report_date = current_date
-                logger.info(f"Secondary report sent successfully at {now}")
-
-            except Exception as e:
-                logger.error(f"Error sending secondary report: {e}")
-
     async def start(self):
-        """Запуск бота"""
+        """Запуск бота: команды и поллинг. Расписание отчёта — в cron, не здесь."""
         logger.info("Bot started...")
         try:
             await self.set_commands()
-            
-            # Запускаем периодическую проверку в отдельной задаче
-            asyncio.create_task(self.check_reports_periodically())
-            logger.info("Periodic check task started")
-            
-            # Запускаем поллинг
             await self.dp.start_polling(self.bot)
         finally:
-            await self.bot.session.close()
-
-    async def check_reports_periodically(self):
-        """Периодическая проверка необходимости отправки отчетов"""
-        while True:
-            await self.check_and_send_reports()
-            # Проверяем каждые 55 секунд
-            await asyncio.sleep(55) 
+            await self.bot.session.close() 

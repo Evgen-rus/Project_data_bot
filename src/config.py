@@ -17,7 +17,8 @@ SHEET_STRUCTURE = {
     'DATE_FORMAT_OUT': '%d.%m.%Y'
 }
 
-# Time settings
+# Время ежедневного отчёта по Москве.
+# Само расписание живёт в crontab (строка 40 13 * * *), бот по таймеру больше не шлёт.
 REPORT_TIME = {
     'HOUR': 13,
     'MINUTE': 40,

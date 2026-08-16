@@ -318,6 +318,35 @@ class TelegramDeliveryTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("legacy-text", texts[0])
         self.assertEqual("disable-me", texts[1])
 
+    def test_bot_does_not_schedule_reports_internally(self):
+        self.assertFalse(hasattr(TelegramBot, "check_reports_periodically"))
+        self.assertFalse(hasattr(TelegramBot, "check_and_send_reports"))
+
+
+class CronSendTests(unittest.IsolatedAsyncioTestCase):
+    async def test_cli_sends_to_group_chat_without_polling(self):
+        from send_secondary_report import send_report
+
+        processor = MagicMock()
+        processor.generate_secondary_report.return_value = {
+            "success": True,
+            "projects": [],
+        }
+        bot = MagicMock()
+        bot.deliver_secondary_report = AsyncMock()
+        bot.bot.session.close = AsyncMock()
+
+        with patch.object(config, "GROUP_CHAT_ID", -100):
+            await send_report(data_processor=processor, bot=bot)
+
+        bot.deliver_secondary_report.assert_awaited_once_with(
+            chat_id=-100,
+            result=processor.generate_secondary_report.return_value,
+            notify_empty=False,
+        )
+        bot.dp.start_polling.assert_not_called()
+        bot.bot.session.close.assert_not_awaited()
+
 
 if __name__ == "__main__":
     unittest.main()
