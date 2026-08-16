@@ -20,7 +20,7 @@ sys.modules.setdefault("google.oauth2.service_account", MagicMock())
 sys.modules.setdefault("googleapiclient", MagicMock())
 sys.modules.setdefault("googleapiclient.discovery", MagicMock())
 
-from src.data_processor import DataProcessor
+from src.data_processor import DataProcessor, parse_sheet_int, column_to_index
 from src.telegram_bot import TelegramBot
 import src.config as config
 
@@ -41,9 +41,9 @@ def make_sheet_rows(today_values_by_name):
     headers = ["Проект", "Статус", "Объем", "D", "Остаток", "Выдано", today_header]
     rows = [headers]
     for name, today_value, remaining, issued, volume in today_values_by_name:
-        # В текущем парсере остаток читается из колонки E, но только если D не пустая
+        # C=объём, D не используется, E=остаток, F=выдано, далее дата
         rows.append(
-            [name, "TRUE", str(volume), str(remaining), str(remaining), str(issued), str(today_value)]
+            [name, "TRUE", str(volume), "", str(remaining), str(issued), str(today_value)]
         )
     return rows
 
@@ -69,7 +69,21 @@ class DataProcessorReportTests(unittest.TestCase):
         self.assertEqual(len(result["projects"]), 2)
         self.assertEqual(result["projects"][0]["name"], "[LR1] Alpha")
         self.assertEqual(result["projects"][0]["today_data"], 3)
+        self.assertEqual(result["projects"][0]["tariff_remaining"], 90)
+        self.assertEqual(result["projects"][0]["total_issued"], 10)
         self.assertEqual(result["projects"][1]["today_data"], 0)
+
+    def test_reads_remaining_from_e_even_if_d_is_empty(self):
+        moscow = pytz.timezone("Europe/Moscow")
+        fixed_now = moscow.localize(datetime(2026, 8, 16, 13, 40))
+        processor = make_processor(make_sheet_rows([("[LR1] Alpha", 3, 995, 5, 1000)]))
+        with patch("src.data_processor.datetime") as datetime_mock:
+            datetime_mock.now.return_value = fixed_now
+            result = processor.generate_secondary_report()
+
+        self.assertEqual(result["projects"][0]["tariff_remaining"], 995)
+        self.assertEqual(result["projects"][0]["total_volume"], 1000)
+        self.assertEqual(result["projects"][0]["total_issued"], 5)
 
     def test_returns_warning_project_lists(self):
         moscow = pytz.timezone("Europe/Moscow")
@@ -321,6 +335,7 @@ class TelegramDeliveryTests(unittest.IsolatedAsyncioTestCase):
     def test_bot_does_not_schedule_reports_internally(self):
         self.assertFalse(hasattr(TelegramBot, "check_reports_periodically"))
         self.assertFalse(hasattr(TelegramBot, "check_and_send_reports"))
+        self.assertFalse(hasattr(TelegramBot, "cmd_test"))
 
 
 class CronSendTests(unittest.IsolatedAsyncioTestCase):
@@ -346,6 +361,26 @@ class CronSendTests(unittest.IsolatedAsyncioTestCase):
         )
         bot.dp.start_polling.assert_not_called()
         bot.bot.session.close.assert_not_awaited()
+
+
+class SheetParseTests(unittest.TestCase):
+    def test_column_letters(self):
+        self.assertEqual(column_to_index("A"), 0)
+        self.assertEqual(column_to_index("E"), 4)
+        self.assertEqual(column_to_index("F"), 5)
+
+    def test_parse_sheet_int_reads_own_cell(self):
+        row = ["name", "TRUE", "1000", "", "995", "5"]
+        self.assertEqual(parse_sheet_int(row, 2), 1000)
+        self.assertEqual(parse_sheet_int(row, 4), 995)
+        self.assertEqual(parse_sheet_int(row, 5), 5)
+        self.assertEqual(parse_sheet_int(row, 3), 0)
+
+    def test_parse_optional_int_does_not_crash_on_empty(self):
+        self.assertIsNone(config.parse_optional_int(None))
+        self.assertIsNone(config.parse_optional_int(""))
+        self.assertIsNone(config.parse_optional_int("  "))
+        self.assertEqual(config.parse_optional_int("-100"), -100)
 
 
 if __name__ == "__main__":

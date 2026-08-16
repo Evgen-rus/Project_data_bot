@@ -21,20 +21,12 @@ class TelegramBot:
         # Регистрация обработчиков
         self.dp.message.register(self.cmd_start, Command("start"))
         self.dp.message.register(self.cmd_secondary, Command("secondary"))
-        self.dp.message.register(self.cmd_test, Command("test"))
-        self.dp.callback_query.register(self.callback_handler)  # Для обработки нажатий
+        self.dp.callback_query.register(self.callback_handler)
 
         # Основная клавиатура
         self.inline_kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📊 Отчет", callback_data="secondary")]
         ])
-
-        # Добавляем обработчик всех сообщений
-        @self.dp.message()
-        async def message_handler(message: Message):
-            logger.info(f"Message from chat: {message.chat.id}")
-            logger.info(f"Chat type: {message.chat.type}")
-            logger.info(f"Full message info: {message.dict()}")
 
     async def cmd_start(self, message: Message):
         """Обработчик команды /start"""
@@ -48,22 +40,6 @@ class TelegramBot:
         if callback.data == "secondary":
             await self.cmd_secondary(callback.message)
         await callback.answer()
-
-    # Удалены команды /daily, /period, /project как неактуальные
-
-    async def cmd_test(self, message: Message):
-        """Тестовая команда для получения ID чата"""
-        chat_id = message.chat.id
-        
-        # Добавляем тестовую отправку в группу
-        try:
-            await self.bot.send_message(
-                chat_id=config.GROUP_CHAT_ID,
-                text=f"Тестовое сообщение в группу\nChat ID группы: {config.GROUP_CHAT_ID}"
-            )
-            await message.reply(f"Тестовое сообщение отправлено в группу\nID текущего чата: {chat_id}")
-        except Exception as e:
-            await message.reply(f"Ошибка отправки: {e}\nID текущего чата: {chat_id}")
 
     async def cmd_secondary(self, message: Message):
         """Обработчик команды /secondary"""
@@ -211,7 +187,6 @@ class TelegramBot:
         commands = [
             BotCommand(command="start", description="🔄 Открыть главное меню"),
             BotCommand(command="secondary", description="📊 Отчет за сегодня"),
-            BotCommand(command="test", description="🧪 Тестовое сообщение")
         ]
         await self.bot.set_my_commands(commands)
 

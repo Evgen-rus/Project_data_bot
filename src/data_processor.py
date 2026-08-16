@@ -7,6 +7,28 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+def column_to_index(letter):
+    """Буква колонки Google Sheets → индекс списка. A=0, B=1, ..."""
+    return ord(letter.strip().upper()) - ord('A')
+
+
+def parse_sheet_int(row, index, default=0):
+    """Читает число из своей ячейки. Пусто, нет колонки или мусор → default."""
+    if index >= len(row):
+        return default
+    raw = row[index]
+    if raw is None:
+        return default
+    text = str(raw).replace('\xa0', '').replace(' ', '').strip()
+    if text == '':
+        return default
+    try:
+        return int(float(text))
+    except ValueError:
+        return default
+
+
 class DataProcessor:
     def __init__(self):
         """Инициализация обработчика данных"""
@@ -64,41 +86,47 @@ class DataProcessor:
                 logger.error(f"Не найдена колонка с датой {today_str}")
                 return {'success': False, 'error': f'Не найдены данные за {today_str}'}
 
+            structure = config.SHEET_SETTINGS['SECONDARY']['STRUCTURE']
+            idx_project = column_to_index(structure['PROJECT_COLUMN'])
+            idx_status = column_to_index(structure['STATUS_COLUMN'])
+            idx_volume = column_to_index(structure['VOLUME_COLUMN'])
+            idx_remaining = column_to_index(structure['REMAINING_COLUMN'])
+            idx_issued = column_to_index(structure['TOTAL_ISSUED_COLUMN'])
+
             active_projects = []
             projects_to_disable = []  # Список проектов для отключения
             projects_to_reduce = []   # Список проектов для уменьшения лимитов
             
             for row in data[1:]:  # Пропускаем заголовок
-                if len(row) > 1 and row[1] == 'TRUE':  # Проверяем статус
-                    try:
-                        # Очищаем значения от пробелов
-                        project_data = {
-                            'name': row[0],
-                            'total_volume': int(float(row[2].replace('\xa0', '').replace(' ', ''))) if row[2] else 0,
-                            'tariff_remaining': int(float(row[4].replace('\xa0', '').replace(' ', ''))) if row[3] else 0,
-                            'total_issued': int(float(row[5].replace('\xa0', '').replace(' ', ''))) if row[4] else 0,
-                            'today_data': int(float(row[today_col_idx].replace('\xa0', '').replace(' ', ''))) if len(row) > today_col_idx and row[today_col_idx] else 0
-                        }
-                        active_projects.append(project_data)
-                        
-                        # Проверяем остаток тарифа
-                        if project_data['tariff_remaining'] <= 0:
-                            projects_to_disable.append({
-                                'name': project_data['name'],
-                                'remaining': project_data['tariff_remaining'],
-                                'today_data': project_data['today_data'],
-                            })
-                        # Проверяем нужно ли уменьшить лимиты
-                        elif project_data['tariff_remaining'] <= project_data['today_data']:
-                            projects_to_reduce.append({
-                                'name': project_data['name'],
-                                'remaining': project_data['tariff_remaining'],
-                                'today_data': project_data['today_data'],
-                            })
-                            
-                    except (ValueError, IndexError) as e:
-                        logger.error(f"Ошибка обработки строки {row}: {e}")
-                        continue
+                if len(row) <= idx_status or row[idx_status] != 'TRUE':
+                    continue
+                try:
+                    project_data = {
+                        'name': row[idx_project] if len(row) > idx_project else '',
+                        'total_volume': parse_sheet_int(row, idx_volume),
+                        'tariff_remaining': parse_sheet_int(row, idx_remaining),
+                        'total_issued': parse_sheet_int(row, idx_issued),
+                        'today_data': parse_sheet_int(row, today_col_idx),
+                    }
+                    active_projects.append(project_data)
+
+                    # Проверяем остаток тарифа
+                    if project_data['tariff_remaining'] <= 0:
+                        projects_to_disable.append({
+                            'name': project_data['name'],
+                            'remaining': project_data['tariff_remaining'],
+                            'today_data': project_data['today_data'],
+                        })
+                    elif project_data['tariff_remaining'] <= project_data['today_data']:
+                        projects_to_reduce.append({
+                            'name': project_data['name'],
+                            'remaining': project_data['tariff_remaining'],
+                            'today_data': project_data['today_data'],
+                        })
+
+                except (ValueError, IndexError) as e:
+                    logger.error(f"Ошибка обработки строки {row}: {e}")
+                    continue
 
             if not active_projects:
                 return {'success': False, 'error': 'Нет активных проектов'}

@@ -37,6 +37,8 @@ async def send_report(data_processor=None, bot=None):
         close_bot = True
 
     try:
+        if config.GROUP_CHAT_ID is None:
+            raise RuntimeError("GROUP_CHAT_ID не задан в .env")
         result = data_processor.generate_secondary_report()
         logger.info("Отчёт собран, success=%s", result.get("success"))
         await bot.deliver_secondary_report(

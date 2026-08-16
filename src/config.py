@@ -3,10 +3,21 @@ import os
 
 load_dotenv()  # загружаем данные из .env
 
+
+def parse_optional_int(value):
+    """Превращает строку из .env в int. Пустое значение — None, без падения."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text == "":
+        return None
+    return int(text)
+
+
 # Telegram Bot Settings
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID"))
-GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID"))
+ADMIN_CHAT_ID = parse_optional_int(os.getenv("ADMIN_CHAT_ID"))
+GROUP_CHAT_ID = parse_optional_int(os.getenv("GROUP_CHAT_ID"))
 
 # Google Sheets (только вторая таблица)
 SECONDARY_SPREADSHEET_ID = os.getenv("SECONDARY_SPREADSHEET_ID")
@@ -37,12 +48,12 @@ SHEET_SETTINGS = {
         'NAME': "[учет данных] 2025",
         'STRUCTURE': {
             'RANGE': 'A1:ZZ227',
-            'PROJECT_COLUMN': 'A',  # Название проекта
-            'STATUS_COLUMN': 'B',   # Статус (TRUE/FALSE)
-            'VOLUME_COLUMN': 'C',   # Объем общий
-            'REMAINING_COLUMN': 'D', # Остаток тарифа
-            'TOTAL_ISSUED_COLUMN': 'E', # Выдано итого
-            'DATA_START_COLUMN': 'G',   # Начало данных по датам
+            'PROJECT_COLUMN': 'A',       # Название проекта
+            'STATUS_COLUMN': 'B',        # Статус (TRUE/FALSE)
+            'VOLUME_COLUMN': 'C',        # Объём тарифа / лимит
+            'REMAINING_COLUMN': 'E',     # Остаток тарифа
+            'TOTAL_ISSUED_COLUMN': 'F',  # Выдано итого
+            'DATA_START_COLUMN': 'G',    # Начало данных по датам
             'DATE_ROW': 1,
         }
     }
